@@ -1,0 +1,1606 @@
+```html
+<!DOCTYPE html>
+<html lang="vi" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Student Planner - Quản Lý Lịch Trình Học Sinh</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        pastel: {
+                            mint: '#A7F3D0',
+                            mintDark: '#059669',
+                            blue: '#BAE6FD',
+                            blueDark: '#0284C7',
+                            peach: '#FFEDD5',
+                            peachDark: '#EA580C',
+                            yellow: '#FEF08A',
+                            yellowDark: '#CA8A04',
+                            purple: '#DDD6FE',
+                            purpleDark: '#7C3AED',
+                            pink: '#FBCFE8',
+                            pinkDark: '#DB2777',
+                            bgLight: '#F8FAFC',
+                            cardLight: '#FFFFFF',
+                            bgDark: '#0F172A',
+                            cardDark: '#1E293B'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for timeline and tables */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .time-slot-grid { min-height: 48px; }
+        .task-card-item { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .task-card-item:hover { transform: translateY(-1px); }
+    </style>
+</head>
+<body class="bg-pastel-bgLight dark:bg-pastel-bgDark text-slate-800 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col md:flex-row pb-16 md:pb-0 selection:bg-teal-200">
+
+    <!-- Sidebar / Navigation -->
+    <aside id="sidebar" class="w-full md:w-64 bg-white dark:bg-pastel-cardDark border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-4 shrink-0 z-20">
+        <div>
+            <!-- Logo & Header -->
+            <div class="flex items-center justify-between mb-6 px-2">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-teal-400 to-indigo-500 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                        🎓
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight">StudentPlan</h1>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">THPT Productivity</p>
+                    </div>
+                </div>
+                <button id="themeToggleBtn" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-600 dark:text-slate-300 transition">
+                    <span id="themeIcon">🌙</span>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="space-y-1">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition">
+                    <span>📊</span>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="switchTab('day')" id="nav-day" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition">
+                    <span>📅</span>
+                    <span>Lịch Ngày</span>
+                </button>
+                <button onclick="switchTab('week')" id="nav-week" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition">
+                    <span>🗓️</span>
+                    <span>Lịch Tuần</span>
+                </button>
+                <button onclick="switchTab('templates')" id="nav-templates" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition">
+                    <span>📋</span>
+                    <span>Mẫu Lịch (Template)</span>
+                </button>
+                <button onclick="switchTab('pomodoro')" id="nav-pomodoro" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition">
+                    <span>⏱️</span>
+                    <span>Pomodoro Timer</span>
+                </button>
+                <button onclick="switchTab('settings')" id="nav-settings" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition">
+                    <span>⚙️</span>
+                    <span>Cài Đặt & Dữ Liệu</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Quick Add & Save status -->
+        <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button onclick="openTaskModal()" class="w-full py-3 px-4 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/20 active:scale-95 transition flex items-center justify-center space-x-2">
+                <span class="text-lg">+</span>
+                <span>Thêm Hoạt Động</span>
+            </button>
+            <div class="flex items-center justify-between text-xs text-slate-400 mt-3 px-1">
+                <span id="saveStatusIndicator" class="flex items-center gap-1 text-teal-600 dark:text-teal-400 font-medium">
+                    <span>✓</span> Đã lưu LocalStorage
+                </span>
+                <span id="currentWeekTag" class="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono">2026-W39</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Mobile Bottom Navigation -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-pastel-cardDark border-t border-slate-200 dark:border-slate-800 flex justify-around py-2 px-1 z-30 md:hidden shadow-lg">
+        <button onclick="switchTab('dashboard')" class="flex flex-col items-center p-1 text-slate-600 dark:text-slate-300 text-xs">
+            <span class="text-base">📊</span><span>Tổng quan</span>
+        </button>
+        <button onclick="switchTab('day')" class="flex flex-col items-center p-1 text-slate-600 dark:text-slate-300 text-xs">
+            <span class="text-base">📅</span><span>Lịch Ngày</span>
+        </button>
+        <button onclick="switchTab('week')" class="flex flex-col items-center p-1 text-slate-600 dark:text-slate-300 text-xs">
+            <span class="text-base">🗓️</span><span>Lịch Tuần</span>
+        </button>
+        <button onclick="switchTab('pomodoro')" class="flex flex-col items-center p-1 text-slate-600 dark:text-slate-300 text-xs">
+            <span class="text-base">⏱️</span><span>Pomodoro</span>
+        </button>
+        <button onclick="openTaskModal()" class="flex flex-col items-center p-1 text-teal-600 text-xs font-bold">
+            <span class="text-base">➕</span><span>Tạo Task</span>
+        </button>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
+        
+        <!-- Top Action Bar (Week Switcher & Search & Filters) -->
+        <header class="bg-white/80 dark:bg-pastel-cardDark/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 p-4 sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3">
+            <!-- Date / Week Navigation -->
+            <div class="flex items-center space-x-2">
+                <button onclick="shiftWeek(-1)" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold">
+                    &lt;
+                </button>
+                <button onclick="goToToday()" class="px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold text-sm hover:bg-teal-100 transition">
+                    Hôm nay
+                </button>
+                <button onclick="shiftWeek(1)" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold">
+                    &gt;
+                </button>
+                <span id="currentWeekDisplay" class="font-bold text-slate-800 dark:text-slate-100 ml-2 text-sm md:text-base">
+                    Tuần -- (01/01 - 07/01/2026)
+                </span>
+            </div>
+
+            <!-- Global Search & Filters -->
+            <div class="flex items-center space-x-2 flex-1 max-w-md justify-end">
+                <div class="relative w-full max-w-xs">
+                    <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Tìm bài học, công việc..." class="w-full pl-8 pr-3 py-1.5 text-sm rounded-xl bg-slate-100 dark:bg-slate-800 border-none focus:ring-2 focus:ring-teal-400 outline-none">
+                    <span class="absolute left-2.5 top-1.5 text-xs text-slate-400">🔍</span>
+                </div>
+                <select id="priorityFilter" onchange="handleFilterChange()" class="text-xs md:text-sm bg-slate-100 dark:bg-slate-800 border-none rounded-xl px-2.5 py-1.5 outline-none">
+                    <option value="ALL">Mọi ưu tiên</option>
+                    <option value="HIGH">🔴 Ưu tiên Cao</option>
+                    <option value="MEDIUM">🟡 Trung bình</option>
+                    <option value="LOW">🟢 Thấp</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- VIEW 1: DASHBOARD -->
+        <section id="view-dashboard" class="view-content p-4 md:p-6 space-y-6">
+            <!-- Header Banner -->
+            <div class="p-6 rounded-3xl bg-gradient-to-r from-teal-400 via-sky-400 to-indigo-400 text-white shadow-xl relative overflow-hidden">
+                <div class="relative z-10">
+                    <div class="text-xs uppercase tracking-widest font-semibold opacity-90" id="dashDateHeader">Thứ Hai, 28/09/2026</div>
+                    <h2 class="text-2xl md:text-3xl font-extrabold mt-1" id="dashWelcomeText">Chào bạn! Chuẩn bị bứt phá hôm nay 🚀</h2>
+                    <p class="text-sm opacity-90 mt-1 max-w-xl" id="dashGamificationQuote">"Kỷ luật là cầu nối giữa mục tiêu và thành công."</p>
+                </div>
+                <div class="absolute -right-6 -bottom-10 opacity-20 text-9xl select-none">📚</div>
+            </div>
+
+            <!-- Key Metrics Grid -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="p-4 rounded-2xl bg-white dark:bg-pastel-cardDark border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <div class="text-xs text-slate-400 font-medium">Tiến Độ Hôm Nay</div>
+                    <div class="flex items-baseline space-x-2 mt-2">
+                        <span id="dashTaskPercent" class="text-2xl font-bold text-teal-600 dark:text-teal-400">0%</span>
+                        <span id="dashTaskCount" class="text-xs text-slate-500">(0/0 task)</span>
+                    </div>
+                    <div class="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full mt-3 overflow-hidden">
+                        <div id="dashProgressBar" class="bg-teal-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-white dark:bg-pastel-cardDark border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <div class="text-xs text-slate-400 font-medium">Tổng Thời Gian Học</div>
+                    <div class="text-2xl font-bold text-sky-600 dark:text-sky-400 mt-2" id="dashTotalStudyTime">0 giờ 0p</div>
+                    <div class="text-xs text-slate-400 mt-1">Dựa trên các bài học hôm nay</div>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-white dark:bg-pastel-cardDark border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <div class="text-xs text-slate-400 font-medium">Chuỗi Chuẩn Bị (Streak)</div>
+                    <div class="flex items-center space-x-1 mt-2">
+                        <span class="text-2xl">🔥</span>
+                        <span id="dashStreakDays" class="text-2xl font-bold text-orange-500">1 ngày</span>
+                    </div>
+                    <div class="text-xs text-slate-400 mt-1">Hoàn thành ít nhất 50% task</div>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-white dark:bg-pastel-cardDark border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <div class="text-xs text-slate-400 font-medium">Phiên Pomodoro</div>
+                    <div class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-2" id="dashPomoCount">0 phiên</div>
+                    <div class="text-xs text-slate-400 mt-1">~ 0 phút tập trung cao</div>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Split: Tasks Today & Subject Stats -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Today Focus List -->
+                <div class="lg:col-span-2 bg-white dark:bg-pastel-cardDark p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-lg flex items-center gap-2">
+                            <span>🎯</span> <span>Nhiệm vụ trọng tâm hôm nay</span>
+                        </h3>
+                        <button onclick="switchTab('day')" class="text-xs font-semibold text-teal-600 hover:underline">Xem lịch chi tiết &rarr;</button>
+                    </div>
+                    <div id="dashTodayTaskList" class="space-y-2.5">
+                        <!-- Dynamic rendered tasks -->
+                    </div>
+                </div>
+
+                <!-- Subject Time Analytics -->
+                <div class="bg-white dark:bg-pastel-cardDark p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
+                    <h3 class="font-bold text-lg flex items-center gap-2">
+                        <span>📊</span> <span>Phân bổ thời gian môn học</span>
+                    </h3>
+                    <div id="dashSubjectStats" class="space-y-3">
+                        <!-- Dynamic subject bars -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: DAILY TIMELINE -->
+        <section id="view-day" class="view-content p-4 md:p-6 hidden space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-pastel-cardDark p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                <div class="flex items-center space-x-3">
+                    <button onclick="shiftDay(-1)" class="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold">&lt;</button>
+                    <input type="date" id="dayDatePicker" onchange="onDatePickerChange(this.value)" class="bg-slate-100 dark:bg-slate-800 font-semibold px-3 py-1.5 rounded-xl text-sm border-none outline-none">
+                    <button onclick="shiftDay(1)" class="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold">&gt;</button>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-slate-500">Mốc thời gian:</span>
+                    <select id="slotDurationSelect" onchange="changeSlotDuration(this.value)" class="text-xs bg-slate-100 dark:bg-slate-800 border-none rounded-xl px-2 py-1 outline-none">
+                        <option value="15">15 phút</option>
+                        <option value="30" selected>30 phút</option>
+                        <option value="60">60 phút</option>
+                    </select>
+                    <button onclick="applyTemplatePrompt('TODAY')" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-300 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition">
+                        📋 Áp dụng Mẫu
+                    </button>
+                </div>
+            </div>
+
+            <!-- Timeline Board Container -->
+            <div class="bg-white dark:bg-pastel-cardDark rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden relative">
+                <div id="dayTimelineGrid" class="divide-y divide-slate-100 dark:divide-slate-800 relative">
+                    <!-- Dynamic timeline slots -->
+                </div>
+                <!-- Current Time Indicator Line -->
+                <div id="currentTimeLine" class="absolute left-16 right-0 border-b-2 border-red-500 z-10 pointer-events-none hidden transition-all duration-300">
+                    <span class="absolute -left-12 -top-2.5 bg-red-500 text-white text-[10px] font-mono px-1 rounded">HH:MM</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: WEEKLY MATRIX -->
+        <section id="view-week" class="view-content p-4 md:p-6 hidden space-y-4">
+            <div class="flex items-center justify-between bg-white dark:bg-pastel-cardDark p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                <div>
+                    <h3 class="font-bold text-lg">Ma Trận Lịch Học Cả Tuần</h3>
+                    <p class="text-xs text-slate-400">Click vào ô bất kỳ để thêm hoạt động hoặc chỉnh sửa trực tiếp</p>
+                </div>
+                <button onclick="applyTemplatePrompt('WEEK')" class="px-3 py-2 bg-teal-500 text-white rounded-xl text-xs font-semibold hover:bg-teal-600 transition shadow">
+                    📋 Áp dụng Template Cho Cả Tuần
+                </button>
+            </div>
+
+            <!-- Weekly Table Grid -->
+            <div class="bg-white dark:bg-pastel-cardDark rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-x-auto">
+                <table class="w-full min-w-[800px] border-collapse">
+                    <thead>
+                        <tr id="weekTableHeader" class="border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
+                            <!-- Dynamic days headers -->
+                        </tr>
+                    </thead>
+                    <tbody id="weekTableBody" class="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        <!-- Dynamic weekly hour slots -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- VIEW 4: TEMPLATES MANAGER -->
+        <section id="view-templates" class="view-content p-4 md:p-6 hidden space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-xl">Quản Lý Lịch Mẫu (Templates)</h3>
+                    <p class="text-xs text-slate-500">Tạo các bản mẫu như "Ngày đi học", "Ngày nghỉ" và dùng lại nhanh chóng mà không làm xáo trộn lịch sử</p>
+                </div>
+                <button onclick="openTemplateModal()" class="px-4 py-2.5 bg-teal-500 text-white rounded-xl font-semibold text-sm hover:bg-teal-600 shadow transition">
+                    + Tạo Template Mới
+                </button>
+            </div>
+
+            <!-- Template Cards List -->
+            <div id="templatesListGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Dynamic template cards -->
+            </div>
+        </section>
+
+        <!-- VIEW 5: POMODORO TIMER -->
+        <section id="view-pomodoro" class="view-content p-4 md:p-6 hidden space-y-6">
+            <div class="max-w-xl mx-auto bg-white dark:bg-pastel-cardDark p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl text-center space-y-6">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-widest text-teal-500">Phương Pháp Pomodoro</span>
+                    <h2 class="text-2xl font-black mt-1">Góc Tập Trung Bứt Phá</h2>
+                </div>
+
+                <!-- Timer Modes -->
+                <div class="flex justify-center space-x-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl w-fit mx-auto">
+                    <button onclick="setPomoMode('WORK')" id="pomoBtn-WORK" class="px-4 py-1.5 rounded-xl text-xs font-bold transition bg-white dark:bg-slate-700 shadow">Học Tập (25p)</button>
+                    <button onclick="setPomoMode('SHORT_BREAK')" id="pomoBtn-SHORT_BREAK" class="px-4 py-1.5 rounded-xl text-xs font-bold transition text-slate-500">Nghỉ Ngắn (5p)</button>
+                    <button onclick="setPomoMode('LONG_BREAK')" id="pomoBtn-LONG_BREAK" class="px-4 py-1.5 rounded-xl text-xs font-bold transition text-slate-500">Nghỉ Dài (15p)</button>
+                </div>
+
+                <!-- Countdown Clock Display -->
+                <div class="py-8">
+                    <div id="pomoClockDisplay" class="text-6xl md:text-7xl font-black font-mono tracking-tight text-slate-800 dark:text-slate-100">
+                        25:00
+                    </div>
+                    <p id="pomoStatusText" class="text-xs text-slate-400 mt-3">Sẵn sàng bước vào phiên tập trung!</p>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex justify-center items-center space-x-4">
+                    <button onclick="togglePomoTimer()" id="pomoStartBtn" class="px-8 py-3 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-2xl shadow-lg shadow-teal-500/30 transition transform active:scale-95">
+                        BẮT ĐẦU
+                    </button>
+                    <button onclick="resetPomoTimer()" class="px-5 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition">
+                        Làm Mới
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 6: SETTINGS & BACKUP DATA -->
+        <section id="view-settings" class="view-content p-4 md:p-6 hidden space-y-6 max-w-4xl">
+            <div>
+                <h3 class="font-bold text-xl">Cài Đặt Hệ Thống & Quản Lý Dữ Liệu</h3>
+                <p class="text-xs text-slate-500">Sao lưu, phục hồi hoặc cấu hình thời gian cá nhân của bạn</p>
+            </div>
+
+            <div class="bg-white dark:bg-pastel-cardDark rounded-2xl border border-slate-100 dark:border-slate-800 p-6 space-y-6 shadow-sm">
+                <h4 class="font-bold text-base border-b border-slate-100 dark:border-slate-800 pb-2">💾 Sao Lưu & Phục Hồi Dữ Liệu (Backup & Restore)</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+                        <div class="font-semibold text-sm">Xuất Dữ Liệu (Export Backup)</div>
+                        <p class="text-xs text-slate-400">Tải file `.json` chứa toàn bộ lịch học và template của bạn về máy tính để phòng ngừa mất dữ liệu.</p>
+                        <button onclick="exportDataJSON()" class="px-4 py-2 bg-teal-500 text-white rounded-xl text-xs font-bold hover:bg-teal-600 transition">
+                            📥 Tải Xuất JSON
+                        </button>
+                    </div>
+
+                    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+                        <div class="font-semibold text-sm">Nhập Dữ Liệu (Import Backup)</div>
+                        <p class="text-xs text-slate-400">Khôi phục lại lịch trình từ file backup JSON đã xuất trước đó.</p>
+                        <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="importDataJSON(event)">
+                        <button onclick="document.getElementById('importFileInput').click()" class="px-4 py-2 bg-sky-500 text-white rounded-xl text-xs font-bold hover:bg-sky-600 transition">
+                            📤 Chọn File Nhập Dữ Liệu
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <h4 class="font-bold text-base text-red-500 mb-2">⚠️ Vùng Nguy Hiểm</h4>
+                    <p class="text-xs text-slate-400 mb-3">Hành động này sẽ xóa sạch toàn bộ dữ liệu task, tuần và template trên trình duyệt này.</p>
+                    <button onclick="dangerResetData()" class="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold hover:bg-red-600 transition">
+                        🗑️ Reset Tất Cả Dữ Liệu (Cần Xác Nhận 2 Lần)
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- TASK EDIT/CREATE MODAL -->
+    <div id="taskModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-pastel-cardDark rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden transform transition-all">
+            <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <h3 id="taskModalTitle" class="font-bold text-lg">Thêm Hoạt Động Mới</h3>
+                <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+            </div>
+            <form id="taskForm" onsubmit="saveTaskForm(event)" class="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+                <input type="hidden" id="taskFormId">
+
+                <!-- Quick Preset Selector -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">💡 Gợi Ý Chọn Nhanh</label>
+                    <div id="quickPresetsContainer" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-xs">
+                        <!-- Dynamic preset chips -->
+                    </div>
+                </div>
+
+                <!-- Title & Date -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold mb-1">Tên hoạt động *</label>
+                        <input type="text" id="taskFormTitle" required placeholder="Ví dụ: Ôn Toán Hình" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border-none text-sm outline-none focus:ring-2 focus:ring-teal-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold mb-1">Ngày thực hiện</label>
+                        <input type="date" id="taskFormDate" required class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border-none text-sm outline-none">
+                    </div>
+                </div>
+
+                <!-- Times & Category -->
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold mb-1">Bắt đầu *</label>
+                        <input type="time" id="taskFormStart" required class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border-none text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold mb-1">Kết thúc *</label>
+                        <input type="time" id="taskFormEnd" required class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border-none text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold mb-1">Danh mục</label>
+                        <select id="taskFormCategory" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border-none text-sm outline-none">
+                            <option value="STUDY">🎓 Học tập</option>
+                            <option value="METHOD">🧠 Phương pháp</option>
+                            <option value="HEALTH">🏃 Sức khỏe</option>
+                            <option value="LIFE">🍱 Sinh hoạt</option>
+                            <option value="REST">😴 Nghỉ ngơi</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Priority & Color -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold mb-1">Độ ưu tiên</label>
+                        <select id="taskFormPriority" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border-none text-sm outline-none">
+                            <option value="HIGH">🔴 Cao</option>
+                            <option value="MEDIUM" selected>🟡 Trung bình</option>
+                            <option value="LOW">🟢 Thấp</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold mb-1">Thẻ màu</label>
+                        <select id="taskFormColor" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border-none text-sm outline-none">
+                            <option value="teal">Xanh Mint</option>
+                            <option value="sky">Xanh Dương</option>
+                            <option value="orange">Cam Đào</option>
+                            <option value="purple">Tím Nhạt</option>
+                            <option value="pink">Hồng Nhạt</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label class="block text-xs font-bold mb-1">Ghi chú & Chi tiết</label>
+                    <textarea id="taskFormNotes" rows="2" placeholder="Nội dung cần hoàn thành, bài tập trang bao nhiêu..." class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border-none text-sm outline-none"></textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <button type="button" id="taskFormDeleteBtn" onclick="deleteCurrentTask()" class="px-4 py-2 bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400 rounded-xl font-bold text-xs hover:bg-red-200 hidden">
+                        Xóa Task
+                    </button>
+                    <div class="flex items-center space-x-2 ml-auto">
+                        <button type="button" onclick="closeTaskModal()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl font-bold text-xs">Hủy</button>
+                        <button type="submit" class="px-6 py-2 bg-teal-500 text-white rounded-xl font-bold text-xs hover:bg-teal-600 shadow">Lưu Hoạt Động</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TEMPLATE EDIT MODAL -->
+    <div id="templateModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-pastel-cardDark rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 dark:border-slate-800 p-6 space-y-4">
+            <h3 class="font-bold text-lg">Tạo / Sửa Template</h3>
+            <div>
+                <label class="block text-xs font-bold mb-1">Tên Bản Mẫu</label>
+                <input type="text" id="templateNameInput" placeholder="Ví dụ: Ngày Ôn Thi Đại Học" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border-none text-sm outline-none">
+            </div>
+            <p class="text-xs text-slate-400">Template sẽ tự động trích xuất các task có trong ngày hiện tại để lưu thành khung mẫu chuẩn.</p>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeTemplateModal()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl font-bold text-xs">Hủy</button>
+                <button onclick="saveTemplateFromToday()" class="px-5 py-2 bg-teal-500 text-white rounded-xl font-bold text-xs hover:bg-teal-600 shadow">Lưu Mẫu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UNDO TOAST -->
+    <div id="undoToast" class="fixed bottom-20 md:bottom-6 right-6 bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 z-50 transition-all duration-300 transform translate-y-20 opacity-0">
+        <span id="undoToastMsg" class="text-xs font-semibold">Đã xóa hoạt động.</span>
+        <button onclick="executeUndo()" class="px-3 py-1 bg-teal-500 text-white font-bold text-xs rounded-xl hover:bg-teal-600">HOÀN TÁC</button>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           1. CORE CONSTANTS & PRESETS DATA
+           ========================================================================== */
+        const STORAGE_KEY = 'STUDENT_PLANNER_MASTER_DATA_V2';
+        
+        const PRESET_ACTIVITIES = [
+            { category: 'STUDY', title: '🎓 Học ở trường (Sáng)', duration: 270, color: 'sky' },
+            { category: 'STUDY', title: '📐 Học thêm Toán', duration: 90, color: 'sky' },
+            { category: 'STUDY', title: '📚 Ôn Ngữ Văn', duration: 60, color: 'sky' },
+            { category: 'STUDY', title: '🇬🇧 Tiếng Anh / IELTS', duration: 60, color: 'sky' },
+            { category: 'STUDY', title: '🧪 Hóa Học / Sinh Học', duration: 60, color: 'sky' },
+            { category: 'METHOD', title: '🧠 Ôn bài Pomodoro (25p)', duration: 30, color: 'purple' },
+            { category: 'METHOD', title: '📇 Ôn Từ vựng Flashcard', duration: 30, color: 'purple' },
+            { category: 'HEALTH', title: '🏃 Chạy bộ / Thể thao', duration: 45, color: 'teal' },
+            { category: 'HEALTH', title: '🏋️ Tập Gym / Thể dục', duration: 45, color: 'teal' },
+            { category: 'LIFE', title: '☀️ Thức dậy & Vệ sinh', duration: 20, color: 'orange' },
+            { category: 'LIFE', title: '🍱 Ăn sáng / trưa / tối', duration: 30, color: 'orange' },
+            { category: 'LIFE', title: '🧹 Dọn dẹp nhà cửa', duration: 30, color: 'orange' },
+            { category: 'REST', title: '😴 Ngủ trưa ngắn', duration: 30, color: 'pink' },
+            { category: 'REST', title: '📖 Đọc sách giải trí', duration: 30, color: 'pink' },
+            { category: 'REST', title: '🛌 Đi ngủ đêm', duration: 480, color: 'pink' }
+        ];
+
+        /* Default Initial Sample Schedule for High School Students */
+        const DEFAULT_SCHEDULE = [
+            { startTime: '05:30', endTime: '06:00', title: '☀️ Thức dậy & Vệ sinh sáng', category: 'LIFE', priority: 'LOW', color: 'orange', notes: 'Uống 1 cốc nước ấm' },
+            { startTime: '06:00', endTime: '06:40', title: '🇬🇧 Ôn từ vựng Tiếng Anh (Active Recall)', category: 'METHOD', priority: 'HIGH', color: 'purple', notes: 'Học 20 từ vựng mới' },
+            { startTime: '06:40', endTime: '07:00', title: '🍱 Ăn sáng & Chuẩn bị đi học', category: 'LIFE', priority: 'MEDIUM', color: 'orange', notes: '' },
+            { startTime: '07:00', endTime: '11:30', title: '🎓 Học chính khóa tại trường', category: 'STUDY', priority: 'HIGH', color: 'sky', notes: 'Tập trung nghe giảng' },
+            { startTime: '11:30', endTime: '12:30', title: '🍱 Ăn trưa & Nghỉ ngơi', category: 'LIFE', priority: 'LOW', color: 'orange', notes: '' },
+            { startTime: '12:30', endTime: '13:15', title: '😴 Ngủ trưa hồi phục năng lượng', category: 'REST', priority: 'MEDIUM', color: 'pink', notes: 'Tắt điện thoại' },
+            { startTime: '13:30', endTime: '17:00', title: '🎓 Học chiều tại trường / Tự học', category: 'STUDY', priority: 'HIGH', color: 'sky', notes: '' },
+            { startTime: '17:30', endTime: '18:30', title: '🏃 Chạy bộ / Chơi cầu lông', category: 'HEALTH', priority: 'MEDIUM', color: 'teal', notes: 'Rèn luyện thể lực' },
+            { startTime: '18:30', endTime: '19:30', title: '🍱 Tắm rửa & Ăn tối cùng gia đình', category: 'LIFE', priority: 'LOW', color: 'orange', notes: '' },
+            { startTime: '19:30', endTime: '21:00', title: '📐 Giải bài tập Toán / Lý / Hóa', category: 'STUDY', priority: 'HIGH', color: 'sky', notes: 'Dạng bài nâng cao' },
+            { startTime: '21:00', endTime: '22:00', title: '📚 Ôn Ngữ Văn & Lịch Sử', category: 'STUDY', priority: 'MEDIUM', color: 'sky', notes: '' },
+            { startTime: '22:00', endTime: '22:30', title: '📝 Review kiến thức & Lập kế hoạch ngày mai', category: 'METHOD', priority: 'HIGH', color: 'purple', notes: '' },
+            { startTime: '22:30', endTime: '23:00', title: '📖 Đọc sách & Thư giãn', category: 'REST', priority: 'LOW', color: 'pink', notes: 'Chuẩn bị đi ngủ' }
+        ];
+
+        /* ==========================================================================
+           2. STATE MANAGEMENT & LOCAL STORAGE
+           ========================================================================== */
+        let state = {
+            selectedDate: getFormattedDate(new Date()),
+            currentTab: 'dashboard',
+            slotDuration: 30, // minutes
+            filterQuery: '',
+            filterPriority: 'ALL',
+            tasks: [],
+            templates: [],
+            pomoState: {
+                mode: 'WORK', // WORK, SHORT_BREAK, LONG_BREAK
+                timeLeft: 25 * 60,
+                isRunning: false,
+                totalSessionsToday: 0
+            },
+            undoStack: null
+        };
+
+        let pomoInterval = null;
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            initPresetsUI();
+            updateDateDisplays();
+            renderAll();
+            startCurrentTimeLineTimer();
+        });
+
+        function saveToStorage() {
+            try {
+                const dataToSave = {
+                    tasks: state.tasks,
+                    templates: state.templates,
+                    pomoSessions: state.pomoState.totalSessionsToday
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+                
+                const indicator = document.getElementById('saveStatusIndicator');
+                if (indicator) {
+                    indicator.innerHTML = '<span>✓</span> Đã lưu';
+                    setTimeout(() => { indicator.innerHTML = '<span>✓</span> Đã lưu LocalStorage'; }, 1500);
+                }
+            } catch (e) {
+                console.error("LocalStorage write error:", e);
+            }
+        }
+
+        function loadFromStorage() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    state.tasks = parsed.tasks || [];
+                    state.templates = parsed.templates || [];
+                    state.pomoState.totalSessionsToday = parsed.pomoSessions || 0;
+                } catch (e) {
+                    console.error("Failed to parse storage:", e);
+                }
+            }
+
+            // First time load: Seed Default Data if empty
+            if (state.tasks.length === 0) {
+                seedInitialData();
+            }
+        }
+
+        function seedInitialData() {
+            const todayStr = state.selectedDate;
+            const weekKey = getWeekKey(new Date(todayStr));
+            
+            // Populate today's tasks
+            DEFAULT_SCHEDULE.forEach(item => {
+                state.tasks.push({
+                    id: generateUniqueId(),
+                    date: todayStr,
+                    weekKey: weekKey,
+                    startTime: item.startTime,
+                    endTime: item.endTime,
+                    title: item.title,
+                    category: item.category,
+                    priority: item.priority,
+                    color: item.color,
+                    notes: item.notes,
+                    completed: false
+                });
+            });
+
+            // Populate Default Template
+            state.templates.push({
+                id: 'tpl_default_1',
+                name: 'Ngày đi học chuẩn (Mẫu THPT)',
+                items: DEFAULT_SCHEDULE
+            });
+
+            saveToStorage();
+        }
+
+        /* ==========================================================================
+           3. DATE & TIME UTILITIES
+           ========================================================================== */
+        function generateUniqueId() {
+            return 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7);
+        }
+
+        function getFormattedDate(date) {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function getWeekKey(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+        }
+
+        function getWeekRange(dateStr) {
+            const curr = new Date(dateStr);
+            const first = curr.getDate() - (curr.getDay() === 0 ? 6 : curr.getDay() - 1); // Monday
+            const monday = new Date(curr.setDate(first));
+            const days = [];
+            
+            for (let i = 0; i < 7; i++) {
+                const nextDay = new Date(monday);
+                nextDay.setDate(monday.getDate() + i);
+                days.push(nextDay);
+            }
+            return days;
+        }
+
+        function timeToMinutes(tStr) {
+            if (!tStr) return 0;
+            const [h, m] = tStr.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        function minutesToTime(mins) {
+            const h = String(Math.floor(mins / 60)).padStart(2, '0');
+            const m = String(mins % 60).padStart(2, '0');
+            return `${h}:${m}`;
+        }
+
+        function formatDisplayDateVietnamese(dateObj) {
+            const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+            const dayName = days[dateObj.getDay()];
+            const dd = String(dateObj.getDate()).padStart(2, '0');
+            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const yyyy = dateObj.getFullYear();
+            return `${dayName}, ${dd}/${mm}/${yyyy}`;
+        }
+
+        /* ==========================================================================
+           4. NAVIGATION & TAB SWITCHING
+           ========================================================================== */
+        function switchTab(tabId) {
+            state.currentTab = tabId;
+            document.querySelectorAll('.view-content').forEach(el => el.classList.add('hidden'));
+            const targetView = document.getElementById(`view-${tabId}`);
+            if (targetView) targetView.classList.remove('hidden');
+
+            // Highlight nav items
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('bg-teal-50', 'dark:bg-teal-950/40', 'text-teal-600', 'font-bold');
+            });
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                activeNav.classList.add('bg-teal-50', 'dark:bg-teal-950/40', 'text-teal-600', 'font-bold');
+            }
+
+            renderAll();
+        }
+
+        function updateDateDisplays() {
+            const currDate = new Date(state.selectedDate);
+            const weekKey = getWeekKey(currDate);
+            const weekDays = getWeekRange(state.selectedDate);
+            const startDateStr = `${String(weekDays[0].getDate()).padStart(2, '0')}/${String(weekDays[0].getMonth() + 1).padStart(2, '0')}`;
+            const endDateStr = `${String(weekDays[6].getDate()).padStart(2, '0')}/${String(weekDays[6].getMonth() + 1).padStart(2, '0')}/${weekDays[6].getFullYear()}`;
+
+            document.getElementById('currentWeekTag').innerText = weekKey;
+            document.getElementById('currentWeekDisplay').innerText = `Tuần (${startDateStr} - ${endDateStr})`;
+            document.getElementById('dayDatePicker').value = state.selectedDate;
+            document.getElementById('dashDateHeader').innerText = formatDisplayDateVietnamese(currDate);
+        }
+
+        function shiftDay(days) {
+            const d = new Date(state.selectedDate);
+            d.setDate(d.getDate() + days);
+            state.selectedDate = getFormattedDate(d);
+            updateDateDisplays();
+            renderAll();
+        }
+
+        function shiftWeek(weeks) {
+            const d = new Date(state.selectedDate);
+            d.setDate(d.getDate() + (weeks * 7));
+            state.selectedDate = getFormattedDate(d);
+            updateDateDisplays();
+            renderAll();
+        }
+
+        function goToToday() {
+            state.selectedDate = getFormattedDate(new Date());
+            updateDateDisplays();
+            renderAll();
+        }
+
+        function onDatePickerChange(val) {
+            if (!val) return;
+            state.selectedDate = val;
+            updateDateDisplays();
+            renderAll();
+        }
+
+        /* ==========================================================================
+           5. RENDERING ENGINE
+           ========================================================================== */
+        function renderAll() {
+            if (state.currentTab === 'dashboard') renderDashboard();
+            else if (state.currentTab === 'day') renderDayTimeline();
+            else if (state.currentTab === 'week') renderWeeklyMatrix();
+            else if (state.currentTab === 'templates') renderTemplatesList();
+            else if (state.currentTab === 'pomodoro') renderPomoUI();
+        }
+
+        function getFilteredTasksForDate(dateStr) {
+            return state.tasks.filter(t => {
+                if (t.date !== dateStr) return false;
+                if (state.filterPriority !== 'ALL' && t.priority !== state.filterPriority) return false;
+                if (state.filterQuery) {
+                    const q = state.filterQuery.toLowerCase();
+                    return t.title.toLowerCase().includes(q) || (t.notes && t.notes.toLowerCase().includes(q));
+                }
+                return true;
+            }).sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+        }
+
+        /* Render Dashboard */
+        function renderDashboard() {
+            const todayTasks = getFilteredTasksForDate(state.selectedDate);
+            const total = todayTasks.length;
+            const completed = todayTasks.filter(t => t.completed).length;
+            const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+            document.getElementById('dashTaskPercent').innerText = `${percent}%`;
+            document.getElementById('dashTaskCount').innerText = `(${completed}/${total} task)`;
+            document.getElementById('dashProgressBar').style.width = `${percent}%`;
+
+            // Calculate Total Study Time Today
+            let studyMins = 0;
+            todayTasks.forEach(t => {
+                if (t.category === 'STUDY' || t.category === 'METHOD') {
+                    studyMins += (timeToMinutes(t.endTime) - timeToMinutes(t.startTime));
+                }
+            });
+            const sHours = Math.floor(studyMins / 60);
+            const sMins = studyMins % 60;
+            document.getElementById('dashTotalStudyTime').innerText = `${sHours} giờ ${sMins}p`;
+            document.getElementById('dashPomoCount').innerText = `${state.pomoState.totalSessionsToday} phiên`;
+
+            // Gamification Quote
+            const quoteEl = document.getElementById('dashGamificationQuote');
+            if (percent === 100 && total > 0) quoteEl.innerText = "🎉 Hoàn hảo! Bạn đã chinh phục toàn bộ mục tiêu hôm nay!";
+            else if (percent >= 80) quoteEl.innerText = "🔥 Rất tốt! Bạn đang bứt phá mạnh mẽ!";
+            else if (percent >= 50) quoteEl.innerText = "⚡ Đang vào guồng! Tiến lên để hoàn thành 100%!";
+            else quoteEl.innerText = "🚀 Khởi động năng lượng và bắt đầu từ nhiệm vụ nhỏ nhất!";
+
+            // Render Today Focus List
+            const listContainer = document.getElementById('dashTodayTaskList');
+            listContainer.innerHTML = '';
+
+            if (todayTasks.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <p class="text-3xl mb-2">🎈</p>
+                        <p class="text-sm font-medium">Chưa có lịch cho ngày này.</p>
+                        <button onclick="openTaskModal()" class="mt-2 text-xs font-bold text-teal-600 hover:underline">+ Thêm hoạt động mới ngay</button>
+                    </div>`;
+            } else {
+                todayTasks.forEach(t => {
+                    const card = document.createElement('div');
+                    card.className = `p-3.5 rounded-2xl border flex items-center justify-between transition-all ${
+                        t.completed ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 opacity-60' : 'bg-white dark:bg-pastel-cardDark border-slate-200 dark:border-slate-700 shadow-sm'
+                    }`;
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTaskComplete('${t.id}')" class="w-5 h-5 accent-teal-500 rounded cursor-pointer">
+                            <div>
+                                <div class="font-bold text-sm ${t.completed ? 'line-through text-slate-400' : ''}">${escapeHtml(t.title)}</div>
+                                <div class="text-xs text-slate-400 mt-0.5 flex items-center space-x-2">
+                                    <span>⏱️ ${t.startTime} - ${t.endTime}</span>
+                                    <span>•</span>
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-${t.color || 'teal'}-100 text-${t.color || 'teal'}-700">${getCategoryLabel(t.category)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="openTaskModal('${t.id}')" class="text-slate-400 hover:text-slate-600 p-1 text-xs">✏️</button>
+                        </div>
+                    `;
+                    listContainer.appendChild(card);
+                });
+            }
+
+            // Render Subject Time Analytics
+            renderSubjectStats(todayTasks);
+        }
+
+        function renderSubjectStats(tasks) {
+            const container = document.getElementById('dashSubjectStats');
+            container.innerHTML = '';
+            
+            const categoryMap = {
+                'STUDY': { label: 'Học tập chính', mins: 0, color: 'bg-sky-500' },
+                'METHOD': { label: 'Phương pháp / Ôn bài', mins: 0, color: 'bg-purple-500' },
+                'HEALTH': { label: 'Thế thao & Sức khỏe', mins: 0, color: 'bg-teal-500' },
+                'LIFE': { label: 'Sinh hoạt cá nhân', mins: 0, color: 'bg-orange-500' },
+                'REST': { label: 'Nghỉ ngơi & Giải trí', mins: 0, color: 'bg-pink-500' }
+            };
+
+            let totalMins = 0;
+            tasks.forEach(t => {
+                const duration = timeToMinutes(t.endTime) - timeToMinutes(t.startTime);
+                if (duration > 0 && categoryMap[t.category]) {
+                    categoryMap[t.category].mins += duration;
+                    totalMins += duration;
+                }
+            });
+
+            Object.keys(categoryMap).forEach(key => {
+                const item = categoryMap[key];
+                const pct = totalMins === 0 ? 0 : Math.round((item.mins / totalMins) * 100);
+                const hrs = (item.mins / 60).toFixed(1);
+
+                const row = document.createElement('div');
+                row.className = "space-y-1";
+                row.innerHTML = `
+                    <div class="flex justify-between text-xs font-semibold">
+                        <span>${item.label}</span>
+                        <span class="text-slate-400">${hrs}h (${pct}%)</span>
+                    </div>
+                    <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div class="${item.color} h-full transition-all duration-500" style="width: ${pct}%"></div>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        /* Render Daily Timeline View */
+        function renderDayTimeline() {
+            const grid = document.getElementById('dayTimelineGrid');
+            grid.innerHTML = '';
+
+            const step = state.slotDuration; // 15, 30, or 60 mins
+            const startHour = 5; // 05:00
+            const endHour = 23; // 23:00
+
+            const tasksToday = getFilteredTasksForDate(state.selectedDate);
+
+            for (let mins = startHour * 60; mins < endHour * 60; mins += step) {
+                const timeLabel = minutesToTime(mins);
+                const nextTimeLabel = minutesToTime(mins + step);
+
+                const slotRow = document.createElement('div');
+                slotRow.className = "flex items-start min-h-[52px] group hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition relative";
+
+                // Time Column
+                const timeCol = document.createElement('div');
+                timeCol.className = "w-16 py-2 px-2 text-right text-xs font-mono font-medium text-slate-400 shrink-0 border-r border-slate-100 dark:border-slate-800 select-none";
+                timeCol.innerText = timeLabel;
+
+                // Task Content Area
+                const contentCol = document.createElement('div');
+                contentCol.className = "flex-1 p-1 relative cursor-pointer min-h-[52px]";
+                contentCol.onclick = (e) => {
+                    if (e.target === contentCol || e.target.classList.contains('slot-bg-clickable')) {
+                        openTaskModal(null, timeLabel, nextTimeLabel);
+                    }
+                };
+                contentCol.classList.add('slot-bg-clickable');
+
+                // Find tasks overlapping this slot
+                const matchingTasks = tasksToday.filter(t => {
+                    const tStart = timeToMinutes(t.startTime);
+                    const tEnd = timeToMinutes(t.endTime);
+                    return tStart < (mins + step) && tEnd > mins;
+                });
+
+                matchingTasks.forEach(task => {
+                    const taskStartMins = timeToMinutes(task.startTime);
+                    // Render task badge if slot contains task start
+                    if (mins <= taskStartMins && taskStartMins < mins + step) {
+                        const taskEl = document.createElement('div');
+                        taskEl.className = `p-2 rounded-xl border mb-1 shadow-sm task-card-item cursor-pointer flex items-center justify-between ${
+                            task.completed ? 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 opacity-60' : `bg-${task.color || 'teal'}-50 dark:bg-${task.color || 'teal'}-950/40 border-${task.color || 'teal'}-200 dark:border-${task.color || 'teal'}-800`
+                        }`;
+                        taskEl.onclick = (e) => {
+                            e.stopPropagation();
+                            openTaskModal(task.id);
+                        };
+
+                        taskEl.innerHTML = `
+                            <div class="flex items-center space-x-2 overflow-hidden">
+                                <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="event.stopPropagation(); toggleTaskComplete('${task.id}')" class="w-4 h-4 accent-teal-500 rounded cursor-pointer">
+                                <span class="font-bold text-xs ${task.completed ? 'line-through text-slate-400' : ''} truncate">${escapeHtml(task.title)}</span>
+                                <span class="text-[10px] text-slate-400 font-mono">(${task.startTime}-${task.endTime})</span>
+                            </div>
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-800 shrink-0">${getPriorityBadge(task.priority)}</span>
+                        `;
+                        contentCol.appendChild(taskEl);
+                    }
+                });
+
+                slotRow.appendChild(timeCol);
+                slotRow.appendChild(contentCol);
+                grid.appendChild(slotRow);
+            }
+
+            updateCurrentTimeLinePosition();
+        }
+
+        /* Realtime Red Line for Today */
+        function updateCurrentTimeLinePosition() {
+            const line = document.getElementById('currentTimeLine');
+            if (!line) return;
+
+            const todayStr = getFormattedDate(new Date());
+            if (state.selectedDate !== todayStr) {
+                line.classList.add('hidden');
+                return;
+            }
+
+            const now = new Date();
+            const currMins = now.getHours() * 60 + now.getMinutes();
+            const startMins = 5 * 60; // 05:00
+            const endMins = 23 * 60; // 23:00
+
+            if (currMins < startMins || currMins > endMins) {
+                line.classList.add('hidden');
+                return;
+            }
+
+            const totalTimelineMins = endMins - startMins;
+            const gridEl = document.getElementById('dayTimelineGrid');
+            if (!gridEl) return;
+
+            const totalHeight = gridEl.offsetHeight;
+            const topPx = ((currMins - startMins) / totalTimelineMins) * totalHeight;
+
+            line.style.top = `${topPx}px`;
+            line.classList.remove('hidden');
+            const label = line.querySelector('span');
+            if (label) label.innerText = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        }
+
+        function startCurrentTimeLineTimer() {
+            setInterval(updateCurrentTimeLinePosition, 30000); // 30 seconds
+        }
+
+        /* Render Weekly Matrix View */
+        function renderWeeklyMatrix() {
+            const headerRow = document.getElementById('weekTableHeader');
+            const body = document.getElementById('weekTableBody');
+            headerRow.innerHTML = '<th class="w-16 p-2 text-xs text-slate-400 font-mono">Giờ</th>';
+            body.innerHTML = '';
+
+            const weekDays = getWeekRange(state.selectedDate);
+            const dayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+            // Header columns
+            weekDays.forEach((d, idx) => {
+                const dateStr = getFormattedDate(d);
+                const isToday = dateStr === getFormattedDate(new Date());
+                const th = document.createElement('th');
+                th.className = `p-2 text-center text-xs font-bold border-l border-slate-200 dark:border-slate-800 ${isToday ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-600' : ''}`;
+                th.innerHTML = `
+                    <div>${dayNames[idx]}</div>
+                    <div class="text-[10px] text-slate-400 font-normal">${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}</div>
+                `;
+                headerRow.appendChild(th);
+            });
+
+            // Hours rows (05:00 to 23:00)
+            for (let hour = 5; hour < 23; hour++) {
+                const timeLabel = `${String(hour).padStart(2, '0')}:00`;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/50 dark:hover:bg-slate-800/20";
+
+                const tdHour = document.createElement('td');
+                tdHour.className = "p-2 text-xs font-mono text-slate-400 text-right border-r border-slate-200 dark:border-slate-800 select-none";
+                tdHour.innerText = timeLabel;
+                tr.appendChild(tdHour);
+
+                weekDays.forEach(d => {
+                    const dateStr = getFormattedDate(d);
+                    const tdDay = document.createElement('td');
+                    tdDay.className = "p-1 border-l border-slate-100 dark:border-slate-800/60 align-top min-w-[100px] h-12 cursor-pointer";
+                    tdDay.onclick = (e) => {
+                        if (e.target === tdDay) openTaskModal(null, timeLabel, `${String(hour + 1).padStart(2, '0')}:00`, dateStr);
+                    };
+
+                    // Tasks in this hour & day
+                    const tasksInHour = state.tasks.filter(t => {
+                        if (t.date !== dateStr) return false;
+                        const startH = parseInt(t.startTime.split(':')[0], 10);
+                        return startH === hour;
+                    });
+
+                    tasksInHour.forEach(t => {
+                        const taskChip = document.createElement('div');
+                        taskChip.className = `p-1 rounded text-[10px] font-bold mb-1 shadow-xs cursor-pointer truncate ${
+                            t.completed ? 'line-through bg-slate-200 dark:bg-slate-700 text-slate-400' : `bg-${t.color || 'teal'}-100 text-${t.color || 'teal'}-800 dark:bg-${t.color || 'teal'}-900/60 dark:text-${t.color || 'teal'}-200`
+                        }`;
+                        taskChip.innerText = `${t.startTime} ${t.title}`;
+                        taskChip.onclick = (e) => {
+                            e.stopPropagation();
+                            openTaskModal(t.id);
+                        };
+                        tdDay.appendChild(taskChip);
+                    });
+
+                    tr.appendChild(tdDay);
+                });
+
+                body.appendChild(tr);
+            }
+        }
+
+        /* Initialize Quick Presets Chips */
+        function initPresetsUI() {
+            const container = document.getElementById('quickPresetsContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            PRESET_ACTIVITIES.forEach(item => {
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = "px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-teal-50 hover:border-teal-300 transition text-left text-xs font-medium";
+                chip.innerText = item.title;
+                chip.onclick = () => applyPresetToForm(item);
+                container.appendChild(chip);
+            });
+        }
+
+        function applyPresetToForm(item) {
+            document.getElementById('taskFormTitle').value = item.title;
+            document.getElementById('taskFormCategory').value = item.category;
+            document.getElementById('taskFormColor').value = item.color;
+
+            const startVal = document.getElementById('taskFormStart').value || '07:00';
+            const startMins = timeToMinutes(startVal);
+            const endMins = startMins + item.duration;
+            document.getElementById('taskFormEnd').value = minutesToTime(endMins);
+        }
+
+        /* ==========================================================================
+           6. TASK CRUD & OVERLAP DETECTION
+           ========================================================================== */
+        function openTaskModal(taskId = null, defaultStart = '07:00', defaultEnd = '08:00', defaultDate = null) {
+            const modal = document.getElementById('taskModal');
+            const titleEl = document.getElementById('taskModalTitle');
+            const deleteBtn = document.getElementById('taskFormDeleteBtn');
+            const form = document.getElementById('taskForm');
+
+            form.reset();
+
+            if (taskId) {
+                const task = state.tasks.find(t => t.id === taskId);
+                if (!task) return;
+                titleEl.innerText = 'Chỉnh Sửa Hoạt Động';
+                deleteBtn.classList.remove('hidden');
+
+                document.getElementById('taskFormId').value = task.id;
+                document.getElementById('taskFormTitle').value = task.title;
+                document.getElementById('taskFormDate').value = task.date;
+                document.getElementById('taskFormStart').value = task.startTime;
+                document.getElementById('taskFormEnd').value = task.endTime;
+                document.getElementById('taskFormCategory').value = task.category;
+                document.getElementById('taskFormPriority').value = task.priority;
+                document.getElementById('taskFormColor').value = task.color || 'teal';
+                document.getElementById('taskFormNotes').value = task.notes || '';
+            } else {
+                titleEl.innerText = 'Thêm Hoạt Động Mới';
+                deleteBtn.classList.add('hidden');
+                document.getElementById('taskFormId').value = '';
+                document.getElementById('taskFormDate').value = defaultDate || state.selectedDate;
+                document.getElementById('taskFormStart').value = defaultStart;
+                document.getElementById('taskFormEnd').value = defaultEnd;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeTaskModal() {
+            document.getElementById('taskModal').classList.add('hidden');
+        }
+
+        function checkTaskOverlap(dateStr, startTimeStr, endTimeStr, excludeTaskId = null) {
+            const startM = timeToMinutes(startTimeStr);
+            const endM = timeToMinutes(endTimeStr);
+
+            return state.tasks.filter(t => {
+                if (t.id === excludeTaskId) return false;
+                if (t.date !== dateStr) return false;
+                const tStart = timeToMinutes(t.startTime);
+                const tEnd = timeToMinutes(t.endTime);
+                return Math.max(startM, tStart) < Math.min(endM, tEnd);
+            });
+        }
+
+        function saveTaskForm(e) {
+            e.preventDefault();
+            const id = document.getElementById('taskFormId').value;
+            const title = document.getElementById('taskFormTitle').value.trim();
+            const date = document.getElementById('taskFormDate').value;
+            const startTime = document.getElementById('taskFormStart').value;
+            const endTime = document.getElementById('taskFormEnd').value;
+            const category = document.getElementById('taskFormCategory').value;
+            const priority = document.getElementById('taskFormPriority').value;
+            const color = document.getElementById('taskFormColor').value;
+            const notes = document.getElementById('taskFormNotes').value.trim();
+
+            if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
+                alert('⚠️ Giờ kết thúc phải lớn hơn giờ bắt đầu!');
+                return;
+            }
+
+            // Overlap check
+            const overlaps = checkTaskOverlap(date, startTime, endTime, id);
+            if (overlaps.length > 0) {
+                const confirmMsg = `⚠️ Cảnh báo: Hoạt động này bị trùng thời gian với [${overlaps[0].title}]. Bạn có muốn tiếp tục lưu không?`;
+                if (!confirm(confirmMsg)) return;
+            }
+
+            const weekKey = getWeekKey(new Date(date));
+
+            if (id) {
+                // Update
+                const taskIndex = state.tasks.findIndex(t => t.id === id);
+                if (taskIndex !== -1) {
+                    state.tasks[taskIndex] = {
+                        ...state.tasks[taskIndex],
+                        title, date, weekKey, startTime, endTime, category, priority, color, notes
+                    };
+                }
+            } else {
+                // Create
+                const newTask = {
+                    id: generateUniqueId(),
+                    date, weekKey, startTime, endTime, title, category, priority, color, notes, completed: false
+                };
+                state.tasks.push(newTask);
+            }
+
+            saveToStorage();
+            closeTaskModal();
+            renderAll();
+        }
+
+        function toggleTaskComplete(id) {
+            const task = state.tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                saveToStorage();
+                renderAll();
+            }
+        }
+
+        function deleteCurrentTask() {
+            const id = document.getElementById('taskFormId').value;
+            if (!id) return;
+            
+            const taskIdx = state.tasks.findIndex(t => t.id === id);
+            if (taskIdx !== -1) {
+                const deletedTask = state.tasks[taskIdx];
+                state.undoStack = { type: 'DELETE_TASK', task: deletedTask, index: taskIdx };
+                state.tasks.splice(taskIdx, 1);
+                
+                saveToStorage();
+                closeTaskModal();
+                renderAll();
+                showUndoToast(`Đã xóa "${deletedTask.title}"`);
+            }
+        }
+
+        function showUndoToast(msg) {
+            const toast = document.getElementById('undoToast');
+            document.getElementById('undoToastMsg').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 5000);
+        }
+
+        function executeUndo() {
+            if (state.undoStack && state.undoStack.type === 'DELETE_TASK') {
+                state.tasks.splice(state.undoStack.index, 0, state.undoStack.task);
+                state.undoStack = null;
+                saveToStorage();
+                renderAll();
+                document.getElementById('undoToast').classList.add('translate-y-20', 'opacity-0');
+            }
+        }
+
+        /* ==========================================================================
+           7. TEMPLATE ENGINE
+           ========================================================================== */
+        function renderTemplatesList() {
+            const grid = document.getElementById('templatesListGrid');
+            grid.innerHTML = '';
+
+            if (state.templates.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-slate-400 text-center py-8">Chưa có bản mẫu nào. Hãy nhấn nút "+ Tạo Template Mới" để lưu lịch chuẩn của bạn!</div>';
+                return;
+            }
+
+            state.templates.forEach(tpl => {
+                const card = document.createElement('div');
+                card.className = "bg-white dark:bg-pastel-cardDark p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-3 flex flex-col justify-between";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-base">${escapeHtml(tpl.name)}</h4>
+                            <span class="text-xs bg-teal-100 text-teal-800 font-semibold px-2 py-0.5 rounded">${tpl.items.length} tasks</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Bản mẫu dành cho lịch trình hàng ngày</p>
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+                        <button onclick="applyTemplateById('${tpl.id}', 'TODAY')" class="px-3 py-1.5 bg-teal-500 text-white font-bold text-xs rounded-xl hover:bg-teal-600">
+                            Áp Dụng Hôm Nay
+                        </button>
+                        <button onclick="deleteTemplate('${tpl.id}')" class="text-xs text-red-500 hover:underline">
+                            Xóa Mẫu
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function openTemplateModal() {
+            document.getElementById('templateNameInput').value = '';
+            document.getElementById('templateModal').classList.remove('hidden');
+        }
+
+        function closeTemplateModal() {
+            document.getElementById('templateModal').classList.add('hidden');
+        }
+
+        function saveTemplateFromToday() {
+            const name = document.getElementById('templateNameInput').value.trim();
+            if (!name) {
+                alert('Vui lòng nhập tên cho bản mẫu!');
+                return;
+            }
+
+            const todayTasks = getFilteredTasksForDate(state.selectedDate);
+            if (todayTasks.length === 0) {
+                alert('⚠️ Ngày hiện tại không có task nào để trích xuất lưu thành mẫu!');
+                return;
+            }
+
+            const tplItems = todayTasks.map(t => ({
+                startTime: t.startTime,
+                endTime: t.endTime,
+                title: t.title,
+                category: t.category,
+                priority: t.priority,
+                color: t.color,
+                notes: t.notes
+            }));
+
+            state.templates.push({
+                id: 'tpl_' + Date.now(),
+                name: name,
+                items: tplItems
+            });
+
+            saveToStorage();
+            closeTemplateModal();
+            renderAll();
+            alert(`✅ Đã lưu template [${name}] thành công!`);
+        }
+
+        function deleteTemplate(tplId) {
+            if (confirm('Bạn chắc chắn muốn xóa template này?')) {
+                state.templates = state.templates.filter(t => t.id !== tplId);
+                saveToStorage();
+                renderAll();
+            }
+        }
+
+        function applyTemplatePrompt(mode) {
+            if (state.templates.length === 0) {
+                alert('Chưa có template nào! Bạn hãy sang mục "Mẫu Lịch" để tạo mẫu trước.');
+                return;
+            }
+
+            const tplNames = state.templates.map((t, idx) => `${idx + 1}. ${t.name}`).join('\n');
+            const choice = prompt(`Nhập số thứ tự Template muốn áp dụng:\n${tplNames}`);
+            if (!choice) return;
+
+            const idx = parseInt(choice, 10) - 1;
+            if (isNaN(idx) || idx < 0 || idx >= state.templates.length) {
+                alert('Lựa chọn không hợp lệ!');
+                return;
+            }
+
+            applyTemplateById(state.templates[idx].id, mode);
+        }
+
+        function applyTemplateById(tplId, mode) {
+            const tpl = state.templates.find(t => t.id === tplId);
+            if (!tpl) return;
+
+            if (mode === 'TODAY') {
+                if (confirm(`Ghi đè hoặc bổ sung khung mẫu [${tpl.name}] vào ngày [${state.selectedDate}]?`)) {
+                    applyTplToSingleDate(tpl, state.selectedDate);
+                }
+            } else if (mode === 'WEEK') {
+                if (confirm(`Áp dụng mẫu [${tpl.name}] cho TẤT CẢ các ngày trong tuần hiện tại?`)) {
+                    const weekDays = getWeekRange(state.selectedDate);
+                    weekDays.forEach(d => {
+                        applyTplToSingleDate(tpl, getFormattedDate(d));
+                    });
+                }
+            }
+
+            saveToStorage();
+            renderAll();
+            alert('✅ Áp dụng Template thành công!');
+        }
+
+        function applyTplToSingleDate(tpl, dateStr) {
+            const weekKey = getWeekKey(new Date(dateStr));
+            tpl.items.forEach(item => {
+                state.tasks.push({
+                    id: generateUniqueId(),
+                    date: dateStr,
+                    weekKey: weekKey,
+                    startTime: item.startTime,
+                    endTime: item.endTime,
+                    title: item.title,
+                    category: item.category,
+                    priority: item.priority,
+                    color: item.color,
+                    notes: item.notes,
+                    completed: false
+                });
+            });
+        }
+
+        /* ==========================================================================
+           8. POMODORO TIMER ENGINE
+           ========================================================================== */
+        function setPomoMode(mode) {
+            state.pomoState.mode = mode;
+            state.pomoState.isRunning = false;
+            clearInterval(pomoInterval);
+
+            if (mode === 'WORK') state.pomoState.timeLeft = 25 * 60;
+            else if (mode === 'SHORT_BREAK') state.pomoState.timeLeft = 5 * 60;
+            else if (mode === 'LONG_BREAK') state.pomoState.timeLeft = 15 * 60;
+
+            // Highlight buttons
+            ['WORK', 'SHORT_BREAK', 'LONG_BREAK'].forEach(m => {
+                const btn = document.getElementById(`pomoBtn-${m}`);
+                if (btn) {
+                    if (m === mode) {
+                        btn.className = "px-4 py-1.5 rounded-xl text-xs font-bold transition bg-white dark:bg-slate-700 shadow";
+                    } else {
+                        btn.className = "px-4 py-1.5 rounded-xl text-xs font-bold transition text-slate-500";
+                    }
+                }
+            });
+
+            renderPomoUI();
+        }
+
+        function togglePomoTimer() {
+            if (state.pomoState.isRunning) {
+                state.pomoState.isRunning = false;
+                clearInterval(pomoInterval);
+            } else {
+                state.pomoState.isRunning = true;
+                pomoInterval = setInterval(() => {
+                    if (state.pomoState.timeLeft > 0) {
+                        state.pomoState.timeLeft--;
+                        renderPomoUI();
+                    } else {
+                        clearInterval(pomoInterval);
+                        state.pomoState.isRunning = false;
+                        if (state.pomoState.mode === 'WORK') {
+                            state.pomoState.totalSessionsToday++;
+                            saveToStorage();
+                            alert('🎉 Hoàn thành phiên Pomodoro! Hãy nghỉ ngơi 5 phút.');
+                        } else {
+                            alert('🔔 Hết giờ nghỉ! Bạn sẵn sàng bước vào phiên học mới.');
+                        }
+                        renderPomoUI();
+                    }
+                }, 1000);
+            }
+            renderPomoUI();
+        }
+
+        function resetPomoTimer() {
+            setPomoMode(state.pomoState.mode);
+        }
+
+        function renderPomoUI() {
+            const mins = Math.floor(state.pomoState.timeLeft / 60);
+            const secs = state.pomoState.timeLeft % 60;
+            const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+            const clockEl = document.getElementById('pomoClockDisplay');
+            if (clockEl) clockEl.innerText = timeStr;
+
+            const startBtn = document.getElementById('pomoStartBtn');
+            if (startBtn) {
+                startBtn.innerText = state.pomoState.isRunning ? 'TẠM DỪNG' : 'BẮT ĐẦU';
+                startBtn.className = `px-8 py-3 font-bold rounded-2xl shadow-lg transition transform active:scale-95 text-white ${
+                    state.pomoState.isRunning ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/30' : 'bg-teal-500 hover:bg-teal-600 shadow-teal-500/30'
+                }`;
+            }
+
+            const statusEl = document.getElementById('pomoStatusText');
+            if (statusEl) {
+                statusEl.innerText = state.pomoState.isRunning ? '🔥 Đang trong phiên tập trung...' : 'Nhấn Bắt đầu để tính giờ tập trung!';
+            }
+        }
+
+        /* ==========================================================================
+           9. BACKUP, IMPORT/EXPORT & UTILITY CONTROLS
+           ========================================================================== */
+        function exportDataJSON() {
+            const exportData = {
+                version: '2.0',
+                exportDate: new Date().toISOString(),
+                tasks: state.tasks,
+                templates: state.templates
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `student_planner_backup_${getFormattedDate(new Date())}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importDataJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && Array.isArray(parsed.tasks)) {
+                        state.tasks = parsed.tasks;
+                        if (Array.isArray(parsed.templates)) state.templates = parsed.templates;
+                        saveToStorage();
+                        renderAll();
+                        alert('✅ Đã phục hồi dữ liệu từ file JSON thành công!');
+                    } else {
+                        alert('⚠️ File JSON không đúng định dạng dữ liệu Planner!');
+                    }
+                } catch (err) {
+                    alert('⚠️ Lỗi đọc file JSON. Vui lòng kiểm tra lại file!');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function dangerResetData() {
+            if (confirm('🚨 CẢNH BÁO XÁC NHẬN LẦN 1: Bạn có thực sự muốn XÓA TOÀN BỘ dữ liệu lịch trình?')) {
+                if (confirm('🚨 XÁC NHẬN LẦN 2: Thao tác này KHÔNG THỂ HOÀN TÁC. Nhấn OK để đồng ý reset dữ liệu.')) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    state.tasks = [];
+                    state.templates = [];
+                    seedInitialData();
+                    renderAll();
+                    alert('✅ Đã khôi phục dữ liệu ban đầu thành công!');
+                }
+            }
+        }
+
+        /* Filter Handlers */
+        function handleSearch(val) {
+            state.filterQuery = val;
+            renderAll();
+        }
+
+        function handleFilterChange() {
+            state.filterPriority = document.getElementById('priorityFilter').value;
+            renderAll();
+        }
+
+        function changeSlotDuration(val) {
+            state.slotDuration = parseInt(val, 10);
+            renderDayTimeline();
+        }
+
+        /* UI Helpers */
+        function getCategoryLabel(cat) {
+            const map = {
+                'STUDY': 'Học tập',
+                'METHOD': 'Phương pháp',
+                'HEALTH': 'Sức khỏe',
+                'LIFE': 'Sinh hoạt',
+                'REST': 'Nghỉ ngơi'
+            };
+            return map[cat] || cat;
+        }
+
+        function getPriorityBadge(prio) {
+            if (prio === 'HIGH') return '🔴 Cao';
+            if (prio === 'MEDIUM') return '🟡 Trung bình';
+            return '🟢 Thấp';
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        // Dark Theme Toggle
+        document.getElementById('themeToggleBtn').addEventListener('click', () => {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                document.getElementById('themeIcon').innerText = '🌙';
+            } else {
+                html.classList.add('dark');
+                document.getElementById('themeIcon').innerText = '☀️';
+            }
+        });
+    </script>
+</body>
+</html>
+```
